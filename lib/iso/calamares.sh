@@ -36,6 +36,11 @@ write_services_suite66_conf(){
     write_services_conf 'svDir' '/etc/66/service' 'runsvDir' '/var/lib/66/system' > "$conf"
 }
 
+write_services_dinit_conf(){
+    local conf="$1"/services-dinit.conf
+    write_services_conf 'initdDir' '/etc/dinit.d' 'runsvDir' '/etc/dinit.d/boot.d' > "$conf"
+}
+
 configure_calamares(){
     local mods="$1/etc/calamares/modules"
     if [[ -d "$mods" ]];then

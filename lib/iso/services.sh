@@ -53,4 +53,14 @@ add_svc_suite66(){
     done
 }
 
+add_svc_dinit(){
+    local mnt="$1" names="$2"
+    for svc in $names; do
+        if [[ -d $mnt/etc/dinit.d/boot.d ]]; then
+            msg2 "Setting %s: [%s]" "${INITSYS}" "$svc"
+            chroot "$mnt" ln -s ../"$svc" /etc/dinit.d/boot.d/"$svc" &>/dev/null
+        fi
+    done
+}
+
 #}}}
