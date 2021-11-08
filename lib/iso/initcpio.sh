@@ -40,7 +40,7 @@ prepare_initramfs_mkinitcpio() {
         export ARTIX_GNUPG_FD
     fi
 
-    artools-chroot "$mnt" mkinitcpio -k "$k" \
+    artix-chroot "$mnt" mkinitcpio -k "$k" \
         -c /etc/"$mkinitcpio_conf" \
         -g /boot/initramfs.img
 

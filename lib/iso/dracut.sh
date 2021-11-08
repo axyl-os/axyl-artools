@@ -10,7 +10,7 @@ prepare_initramfs_dracut(){
     printf "%s\n" 'add_dracutmodules+=" dmsquash-live"' > "$mnt"/etc/dracut.conf.d/50-live.conf
 
     msg "Starting build: %s" "${kver}"
-    artools-chroot "$mnt" dracut -fqM /boot/initramfs.img "$kver"
+    artix-chroot "$mnt" dracut -fqM /boot/initramfs.img "$kver"
     msg "Image generation successful"
 
     cp "$mnt"/boot/initramfs.img "${iso_root}"/boot/initramfs-"${arch}".img
