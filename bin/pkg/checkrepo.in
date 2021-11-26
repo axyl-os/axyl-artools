@@ -50,20 +50,14 @@ is_db_entry() {
 }
 
 check_db(){
-    local pkgpath="${1}" oldpath="${1%/*}"/repos
+    local pkgpath="${1}"
 
     for repo in "${!REPOS[@]}"; do
 
         local pkgbuild artixver
         if [[ -f $pkgpath/$repo/PKGBUILD ]]; then
             pkgbuild=$pkgpath/$repo/PKGBUILD
-        elif [[ -f $oldpath/$repo-$CARCH/PKGBUILD ]]; then
-            pkgbuild=$oldpath/$repo-$CARCH/PKGBUILD
-        elif [[ -f $oldpath/$repo-any/PKGBUILD ]]; then
-            pkgbuild=$oldpath/$repo-any/PKGBUILD
-        fi
 
-        if [[ -f "$pkgbuild" ]]; then
             # shellcheck disable=1090
             . "$pkgbuild" 2>/dev/null
             artixver=$(get_full_version)

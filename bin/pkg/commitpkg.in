@@ -46,33 +46,6 @@ subrepo_pull(){
     git subrepo pull "$pkg"
 }
 
-prepare_commit(){
-    # create new layout, copy & remove repos
-    if [[ -d repos ]]; then
-        msg2 "Switching to new layout ..."
-        [[ ! -d "$CARCH" ]] && mkdir "$CARCH"
-
-        for r in repos/*; do
-            local name noarch
-            name=${r#*/}
-            noarch=${name%-*}
-            mkdir "$CARCH/${noarch}"
-            cp repos/"${name}"/* "$CARCH/${noarch}/"
-            git add "$CARCH/${noarch}"
-        done
-
-        git rm -r repos
-        git commit -m "switch to new repo layout"
-        msg2 "Done switch"
-    fi
-
-    if [[ $action == 'add' ]] || [[ $action == 'move' ]] ;then
-        [[ -d "$CARCH/${repo_dest}" ]] && git rm -r "$CARCH/${repo_dest}"
-        [[ ! -d "$CARCH" ]] && mkdir "$CARCH"
-        [[ ! -d "$CARCH/${repo_dest}" ]] && mkdir "$CARCH/${repo_dest}"
-    fi
-}
-
 check_rebuild(){
     if [[ -d "$CARCH"/"${valid_names[10]}" ]] \
     && [[ "${repo_dest}" == "${valid_names[7]}" ]]; then
@@ -104,11 +77,6 @@ check_team(){
 path_config() {
     [[ "${repo_src}" != 'trunk' ]] && pkgbuild="$CARCH/${repo_src}"/PKGBUILD
 
-    if [[ ! -f "$pkgbuild" ]]; then
-        pkgbuild=repos/"${repo_src}-${CARCH}"/PKGBUILD
-        [[ -f repos/"${repo_src}"-any/PKGBUILD ]] && pkgbuild=repos/"${repo_src}"-any/PKGBUILD
-    fi
-
     # shellcheck disable=1090
     . "$pkgbuild"
 }
@@ -130,7 +98,6 @@ commit_pkg() {
         if [[ "${repo_src}" == 'trunk' ]];then
             git rm -r trunk
         else
-            prepare_commit
             git rm -r "$CARCH/${repo_src}"
         fi
     else
@@ -144,11 +111,15 @@ commit_pkg() {
 
 repo_commit_pkg() {
     local commit_msg
+
+    [[ -d "$CARCH/${repo_dest}" ]] && git rm -r "$CARCH/${repo_dest}"
+    [[ ! -d "$CARCH" ]] && mkdir "$CARCH"
+    [[ ! -d "$CARCH/${repo_dest}" ]] && mkdir "$CARCH/${repo_dest}"
+
     if [[ "${repo_src}" == 'trunk' ]]; then
         action='add'
         commit_msg=$(get_repo_commit_msg)
         msg "Action: %s" "$commit_msg"
-        prepare_commit
         check_rebuild
         cp trunk/* "$CARCH/${repo_dest}"/
     else
@@ -156,7 +127,6 @@ repo_commit_pkg() {
         [[ ! -f $pkgbuild ]] && die "%s does not exist!" "$pkgbuild"
         commit_msg=$(get_repo_commit_msg)
         msg "Action: %s" "$commit_msg"
-        prepare_commit
         cp "$CARCH/${repo_src}"/* "$CARCH/${repo_dest}"/
         git rm -r "$CARCH/${repo_src}"
     fi
