@@ -50,26 +50,32 @@ is_db_entry() {
 }
 
 check_db(){
-    local pkgpath="${1%/*}"
+    local pkgpath="${1}" oldpath="${1%/*}"/repos
 
     for repo in "${!REPOS[@]}"; do
+
         local pkgbuild artixver
-        [[ -f $pkgpath/$CARCH/$repo/PKGBUILD ]] && pkgbuild=$pkgpath/$CARCH/$repo/PKGBUILD
-        [[ -f $pkgpath/repos/$repo-$CARCH/PKGBUILD ]] && pkgbuild=$pkgpath/repos/$repo-$CARCH/PKGBUILD
-        [[ -f $pkgpath/repos/$repo-any/PKGBUILD ]] && pkgbuild=$pkgpath/repos/$repo-any/PKGBUILD
+        if [[ -f $pkgpath/$repo/PKGBUILD ]]; then
+            pkgbuild=$pkgpath/$repo/PKGBUILD
+        elif [[ -f $oldpath/$repo-$CARCH/PKGBUILD ]]; then
+            pkgbuild=$oldpath/$repo-$CARCH/PKGBUILD
+        elif [[ -f $oldpath/$repo-any/PKGBUILD ]]; then
+            pkgbuild=$oldpath/$repo-any/PKGBUILD
+        fi
 
-        # shellcheck disable=1090
-        . "$pkgbuild" 2>/dev/null
-        artixver=$(get_full_version)
-
-        for name in "${pkgname[@]}"; do
-            if ! is_db_entry "$name-$artixver" "$repo"; then
-                msg_row_red "${tableU}" "$repo" "$name" "$artixver" "false"
-            else
-                ${all_db} && msg_row "${tableU}" "$repo" "$name" "$artixver" "true"
-            fi
-        done
-        unset artixver pkgbuild pkgver epoch pkgname pkgbase
+        if [[ -f "$pkgbuild" ]]; then
+            # shellcheck disable=1090
+            . "$pkgbuild" 2>/dev/null
+            artixver=$(get_full_version)
+            for name in "${pkgname[@]}"; do
+                if ! is_db_entry "$name-$artixver" "$repo"; then
+                    msg_row_red "${tableU}" "$repo" "$name" "$artixver" "false"
+                else
+                    ${all_db} && msg_row "${tableU}" "$repo" "$name" "$artixver" "true"
+                fi
+            done
+            unset artixver pkgbuild pkgver epoch pkgname pkgbase
+        fi
     done
 }
 
