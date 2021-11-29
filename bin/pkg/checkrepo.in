@@ -75,6 +75,61 @@ check_db(){
 
 #}}}
 
+# {{{ check obsolete
+
+check_obsolete() {
+#     [[ -d "${artix_db}" ]] && rm -r "${artix_db}"
+#     [[ -d "${arch_db}" ]] && rm -r "${arch_db}"
+
+    local arch_mirror='https://mirror.f4st.host/archlinux'
+
+
+    local arch_repo="${searchrepos[@]}"
+    local artix_repo="${REPOS[$arch_repo]}"
+
+    local artix_db_dir=${db_cache_dir}/artixlinux
+    local arch_db_dir=${db_cache_dir}/archlinux
+    local artix_db="${artix_db_dir}/${artix_repo}"
+    local arch_db="${arch_db_dir}/${arch_repo}"
+
+    mkdir -p "${artix_db}"
+    mkdir -p "${arch_db}"
+
+    local url=
+    url=${REPOS_MIRROR}/${artix_repo}/os/$CARCH/${artix_repo}.db.tar.gz
+    curl -L -s "$url" | bsdtar -xf - -C "${artix_db}"
+
+    url=${arch_mirror}/${arch_repo}/os/$CARCH/${arch_repo}.db.tar.gz
+    curl -L -s "$url" | bsdtar -xf - -C "${arch_db}"
+
+    for p in "${artix_db}"/*; do
+        local pkg rel
+        pkg=${p##*/}
+        rel=${pkg##*-}
+        rel=${rel%.*}
+        pkg=${pkg%-*}
+        local p="$pkg-$rel"
+        if [[ "$p" != *openrc* ]] && [[ "$p" != *runit* ]] \
+        && [[ "$p" != *s6* ]] && [[ "$p" != *suite66* ]] \
+        && [[ "$p" != *eudev* ]] && [[ "$p" != *elogind* ]] \
+        && [[ "$p" != *sysusers* ]] && [[ "$p" != *tmpfiles* ]] \
+        && [[ "$p" != *execline* ]] && [[ "$p" != *skalibs* ]] \
+        && [[ "$p" != *netifrc* ]] && [[ "$p" != *bootlogd* ]] \
+        && [[ "$p" != *mkinitcpio-openswap* ]] && [[ "$p" != *nss-myhostname* ]] \
+        && [[ "$p" != *pam_rundir* ]] && [[ "$p" != *artools* ]] \
+        && [[ "$p" != *blocaled* ]] && [[ "$p" != *iso-initcpio* ]] \
+        && [[ "$p" != *archlinux* ]] && [[ "$p" != *iso-profiles* ]] \
+        && [[ "$p" != *calamares* ]] && [[ "$p" != *transmission* ]] \
+        && [[ "$p" != *dinit* ]] && [[ "$p" != *artix* ]]; then
+            [[ ! -d "${arch_db}/$p" ]] && msg_row "${tableU}" "${artix_repo}" "$p" "true"
+        fi
+    done
+    rm -r "${artix_db}"
+    rm -r "${arch_db}"
+}
+
+#}}}
+
 show_lib_table() {
     msg_table_header "${tableQ}" "Repo" "Package" "Library"
     query_db
@@ -83,6 +138,11 @@ show_lib_table() {
 show_db_table(){
     msg_table_header "${tableU}" "Repo" "Package" "Version" "Database"
     tree_loop check_db
+}
+
+show_obsolete_table(){
+    msg_table_header "${tableU}" "Repo" "Package" "Obsolete"
+    check_obsolete
 }
 
 update_db_cache(){
@@ -109,6 +169,7 @@ sync=false
 check=false
 query=false
 all_db=false
+obsolete=false
 
 readonly tableU="%-20s %-35s %-30s %-10s"
 readonly tableQ="%-20s %-45s %s"
@@ -156,6 +217,7 @@ usage() {
     echo "    -s            Sync repo databases"
     echo '    -c            Check repos'
     echo '    -a            Show repo db (-c)'
+    echo '    -o            Check for obsolete packages'
     echo "    -q            Query repo databases for so libs"
     echo '    -h            This help'
     echo ''
@@ -163,7 +225,7 @@ usage() {
     exit "$1"
 }
 
-opts='r:qcsah'
+opts='r:qcsaoh'
 
 while getopts "${opts}" arg; do
     case "${arg}" in
@@ -172,6 +234,7 @@ while getopts "${opts}" arg; do
         c) check=true ;;
         a) all_db=true ;;
         q) query=true ;;
+        o) obsolete=true ;;
         h|?) usage 0 ;;
         *) echo "invalid argument '${arg}'"; usage 1 ;;
     esac
@@ -186,3 +249,5 @@ ${sync} && update_db_cache
 ${check} && show_db_table
 
 ${query} && show_lib_table
+
+${obsolete} && show_obsolete_table
