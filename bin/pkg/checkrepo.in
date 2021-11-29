@@ -18,19 +18,42 @@ m4_include(lib/base/message.sh)
 m4_include(lib/pkg/repo.sh)
 m4_include(lib/pkg/table.sh)
 
+#{{{ db libs
+
+extract_db() {
+    local u="$1" cdir="$2"
+    rm -rf "$cdir"
+    mkdir -p "$cdir"
+    msg2 "%s" "${cdir##*/}"
+    curl -L -s "$u" | bsdtar -xf - -C "$cdir"
+}
+
+update_db_cache(){
+    msg "Updating database cache ..."
+    local cachedir url
+    for repo in "${searchrepos[@]}"; do
+        cachedir=${db_cache_dir}/linksdb/$repo
+        url=${REPOS_MIRROR}/$repo/os/${CARCH}/$repo.${linksdb_ext}
+        extract_db "$url" "$cachedir"
+    done
+    msg "Done"
+}
+
+#}}}
+
 #{{{ sogrep
 
 query_db() {
     for repo in "${searchrepos[@]}"; do
         local db
-        db=${db_cache_dir}/${linksdb_ext}/${CARCH}/${repo}/
+        db=${db_cache_dir}/linksdb/$repo/
         if [[ -d ${db} ]]; then
             while read -rd '' pkg; do
                 read -r match
                 pkg=${pkg#${db}}
                 pkg="${pkg%/*}"
-                msg_row "${tableQ}" "${repo}" "${pkg}" "${match}"
-            done < <(grep -rZ "${library}" "${db}") | sort -u
+                msg_row "${tableQ}" "$repo" "$pkg" "${match}"
+            done < <(grep -rZ "$library" "$db") | sort -u
         fi
     done
 }
@@ -41,7 +64,7 @@ query_db() {
 
 is_db_entry() {
     local pkgname="$1" repo="${REPOS[$2]}" entry
-    entry=${db_cache_dir}/${linksdb_ext}/${CARCH}/$repo/$pkgname
+    entry=${db_cache_dir}/linksdb/$repo/$pkgname
 
     if [[ -d "$entry" ]];then
         return 0
@@ -77,31 +100,25 @@ check_db(){
 
 # {{{ check obsolete
 
-check_obsolete() {
-#     [[ -d "${artix_db}" ]] && rm -r "${artix_db}"
-#     [[ -d "${arch_db}" ]] && rm -r "${arch_db}"
-
+show_obsolete_table() {
     local arch_mirror='https://mirror.f4st.host/archlinux'
 
+    local arch_repo artix_repo artix_db arch_db url
+    arch_repo="${searchrepos[@]}"
+    artix_repo="${REPOS[$arch_repo]}"
 
-    local arch_repo="${searchrepos[@]}"
-    local artix_repo="${REPOS[$arch_repo]}"
+    artix_db="${db_cache_dir}/artixdb/${artix_repo}"
+    arch_db="${db_cache_dir}/archdb/${arch_repo}"
 
-    local artix_db_dir=${db_cache_dir}/artixlinux
-    local arch_db_dir=${db_cache_dir}/archlinux
-    local artix_db="${artix_db_dir}/${artix_repo}"
-    local arch_db="${arch_db_dir}/${arch_repo}"
+    msg "Updating database cache ..."
+    url=${REPOS_MIRROR}/${artix_repo}/os/$CARCH/${artix_repo}.${db_ext}
+    extract_db "$url" "${artix_db}"
 
-    mkdir -p "${artix_db}"
-    mkdir -p "${arch_db}"
+    url=${arch_mirror}/${arch_repo}/os/$CARCH/${arch_repo}.${db_ext}
+    extract_db "$url" "${arch_db}"
+    msg "Done"
 
-    local url=
-    url=${REPOS_MIRROR}/${artix_repo}/os/$CARCH/${artix_repo}.db.tar.gz
-    curl -L -s "$url" | bsdtar -xf - -C "${artix_db}"
-
-    url=${arch_mirror}/${arch_repo}/os/$CARCH/${arch_repo}.db.tar.gz
-    curl -L -s "$url" | bsdtar -xf - -C "${arch_db}"
-
+    msg_table_header "${tableQ}" "Repo" "Package" "Obsolete"
     for p in "${artix_db}"/*; do
         local pkg rel
         pkg=${p##*/}
@@ -109,23 +126,22 @@ check_obsolete() {
         rel=${rel%.*}
         pkg=${pkg%-*}
         local p="$pkg-$rel"
+
         if [[ "$p" != *openrc* ]] && [[ "$p" != *runit* ]] \
         && [[ "$p" != *s6* ]] && [[ "$p" != *suite66* ]] \
         && [[ "$p" != *eudev* ]] && [[ "$p" != *elogind* ]] \
         && [[ "$p" != *sysusers* ]] && [[ "$p" != *tmpfiles* ]] \
         && [[ "$p" != *execline* ]] && [[ "$p" != *skalibs* ]] \
         && [[ "$p" != *netifrc* ]] && [[ "$p" != *bootlogd* ]] \
-        && [[ "$p" != *mkinitcpio-openswap* ]] && [[ "$p" != *nss-myhostname* ]] \
         && [[ "$p" != *pam_rundir* ]] && [[ "$p" != *artools* ]] \
-        && [[ "$p" != *blocaled* ]] && [[ "$p" != *iso-initcpio* ]] \
         && [[ "$p" != *archlinux* ]] && [[ "$p" != *iso-profiles* ]] \
-        && [[ "$p" != *calamares* ]] && [[ "$p" != *transmission* ]] \
+        && [[ "$p" != *calamares* ]] && [[ "$p" != *iso-initcpio* ]] \
         && [[ "$p" != *dinit* ]] && [[ "$p" != *artix* ]]; then
-            [[ ! -d "${arch_db}/$p" ]] && msg_row "${tableU}" "${artix_repo}" "$p" "true"
+            if [[ ! -d "${arch_db}/$p" ]]; then
+                msg_row "${tableQ}" "${artix_repo}" "$p" "true"
+            fi
         fi
     done
-    rm -r "${artix_db}"
-    rm -r "${arch_db}"
 }
 
 #}}}
@@ -140,28 +156,10 @@ show_db_table(){
     tree_loop check_db
 }
 
-show_obsolete_table(){
-    msg_table_header "${tableU}" "Repo" "Package" "Obsolete"
-    check_obsolete
-}
-
-update_db_cache(){
-    msg "Updating database cache ..."
-    local cachedir url
-    for repo in "${searchrepos[@]}"; do
-        cachedir=${db_cache_dir}/${linksdb_ext}/${CARCH}/${repo}
-        rm -rf "$cachedir"
-        mkdir -p "$cachedir"
-        msg2 "%s" "$repo"
-        url=${REPOS_MIRROR}/${repo}/os/${CARCH}/${repo}.${linksdb_ext}
-        curl -L -s "$url" | bsdtar -xf - -C "$cachedir"
-    done
-    msg "Done"
-}
-
 db_cache_dir="${XDG_CACHE_HOME:-$USER_HOME/.cache}/artools"
 
 linksdb_ext="links.tar.${DBEXT}"
+db_ext="db.tar.${DBEXT}"
 
 load_makepkg_config
 
@@ -172,7 +170,7 @@ all_db=false
 obsolete=false
 
 readonly tableU="%-20s %-35s %-30s %-10s"
-readonly tableQ="%-20s %-45s %s"
+readonly tableQ="%-20s %-55s %s"
 
 load_valid_names
 
