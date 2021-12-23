@@ -23,19 +23,19 @@ load_pkg_config(){
 
     ARTIX_TREE=(
         packages community
-        packages-{gfx,gtk,media,net,qt5,xorg}
+        packages-{gfx,media,net}
     )
 
     local dev_tree=(
-        packages-{llvm,python,perl,java,ruby}
-        python-{world,galaxy}
+        packages-{llvm,python,perl,java,ruby,misc}
+        python-{world,galaxy,galaxy-groups,misc}
     )
 
     local init_tree=(packages-{openrc,runit,s6,suite66,dinit})
 
     local desktop_tree=(
-        packages-{kf5,plasma,kde,qt6}
-        packages-{lxqt,gnome,cinnamon,mate,xfce,wm}
+        packages-{kf5,plasma,kde,qt5,qt6,xorg,gtk}
+        packages-{lxqt,gnome,cinnamon,mate,xfce,wm,lxde}
     )
 
     [[ -z ${TREE_NAMES_ARTIX[*]} ]] && \
