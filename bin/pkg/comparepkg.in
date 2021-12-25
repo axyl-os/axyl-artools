@@ -54,7 +54,7 @@ compare_u(){
     if [ "$result" -eq -1 ];then
 #         local arel=${archver##*-} brel=${artixver##*-}
 #         local reldiff
-        reldiff=$(( $arel-${brel%.*} ))
+#         reldiff=$(( $arel-${brel%.*} ))
         msg_row_red "${table}" "${a}" "${b}" "$pkg" "$archver" "$artixver" "${group#*-}"
         write_list "${a}:$pkg" pkg_upgrades
     fi
