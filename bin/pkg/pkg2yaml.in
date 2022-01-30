@@ -17,6 +17,15 @@ m4_include(lib/base/yaml.sh)
 
 #{{{ functions
 
+print_package_names() {
+    local version=$(get_full_version)
+    local architecture pkg opts a
+    for pkg in ${pkgname[@]}; do
+        architecture=$(get_pkg_arch $pkg)
+        printf "%s/%s-%s-%s%s\n" "$PKGDEST" "$pkg" "$version" "$architecture" "$PKGEXT"
+    done
+}
+
 srcyaml_write_attr(){
     local ident1="$1" ident2="$2" ident3="$3"
     local attrname=$4 attrvalues=("${@:5}")
@@ -109,7 +118,7 @@ yaml_write_fileinfo(){
     Yaml+=$(write_yaml_map 0 "version" "${version:-0}")
     Yaml+=$(write_empty_line)
     local pkgfile
-    pkgfile=$(print_all_package_names)
+    pkgfile=$(print_package_names)
     Yaml+=$(write_yaml_map 0 "files")
     for f in ${pkgfile}; do
         Yaml+=$(write_yaml_seq 2 "${f##*/}")
