@@ -31,9 +31,10 @@ add_svc_s6(){
         ret="$?"
         if [ $ret -eq 0 ] && [[ "$error" == false ]]; then
             msg2 "Setting %s: [%s]" "${INITSYS}" "$svc"
-            chroot "$mnt" s6-rc-bundle-update -c "$db" add "$rlvl" "$svc"
+            chroot "$mnt" touch /etc/s6/adminsv/default/contents.d/"$svc"
         fi
     done
+    chroot "$mnt" s6-db-reload
 
     local rlvl=/etc/s6/current
     # rebuild s6-linux-init binaries
