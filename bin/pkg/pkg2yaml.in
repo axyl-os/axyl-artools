@@ -19,11 +19,20 @@ m4_include(lib/base/yaml.sh)
 
 print_package_names() {
     local version=$(get_full_version)
-    local architecture pkg opts a
+    local architecture pkg
     for pkg in ${pkgname[@]}; do
         architecture=$(get_pkg_arch $pkg)
         printf "%s/%s-%s-%s%s\n" "$PKGDEST" "$pkg" "$version" "$architecture" "$PKGEXT"
     done
+}
+
+print_debug_package_names() {
+    local version=$(get_full_version)
+    local architecture
+    if check_option "debug" "y" && check_option "strip" "y"; then
+        architecture=$(get_pkg_arch)
+        printf "%s/%s-%s-%s-%s%s\n" "$PKGDEST" "$pkgbase" "debug" "$version" "$architecture" "$PKGEXT"
+    fi
 }
 
 srcyaml_write_attr(){
@@ -117,11 +126,17 @@ yaml_write_fileinfo(){
     pkgbase=${pkgbase:-$pkgname}
     Yaml+=$(write_yaml_map 0 "version" "${version:-0}")
     Yaml+=$(write_empty_line)
-    local pkgfile
+    local pkgfile debug_pkg
     pkgfile=$(print_package_names)
     Yaml+=$(write_yaml_map 0 "files")
     for f in ${pkgfile}; do
         Yaml+=$(write_yaml_seq 2 "${f##*/}")
+    done
+    Yaml+=$(write_empty_line)
+    debug_pkg=$(print_debug_package_names)
+    Yaml+=$(write_yaml_map 0 "debug")
+    for d in ${debug_pkg}; do
+        Yaml+=$(write_yaml_seq 2 "${d##*/}")
     done
     Yaml+=$(write_empty_line)
 }
