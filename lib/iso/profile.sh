@@ -56,7 +56,8 @@ read_from_list() {
 read_from_services() {
     for svc in "${SERVICES[@]}"; do
         case "$svc" in
-            sddm|gdm|lightdm|mdm|greetd|lxdm|xdm) packages+=("$svc-${INITSYS}") ;;
+            sddm|gdm|lightdm|mdm|greetd|lxdm|xdm)
+                packages+=("$svc-${INITSYS}"); display_manager="$svc" ;;
             NetworkManager) packages+=("networkmanager-${INITSYS}") ;;
             connmand) packages+=("connman-${INITSYS}") ;;
             cupsd) packages+=("cups-${INITSYS}") ;;
