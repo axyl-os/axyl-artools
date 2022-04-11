@@ -129,14 +129,14 @@ show_obsolete_table() {
 
         if [[ "$p" != *openrc* ]] && [[ "$p" != *runit* ]] \
         && [[ "$p" != *s6* ]] && [[ "$p" != *suite66* ]] \
-        && [[ "$p" != *eudev* ]] && [[ "$p" != *elogind* ]] \
+        && [[ "$p" != *udev* ]] && [[ "$p" != *elogind* ]] \
         && [[ "$p" != *sysusers* ]] && [[ "$p" != *tmpfiles* ]] \
         && [[ "$p" != *execline* ]] && [[ "$p" != *skalibs* ]] \
         && [[ "$p" != *netifrc* ]] && [[ "$p" != *bootlogd* ]] \
         && [[ "$p" != *pam_rundir* ]] && [[ "$p" != *artools* ]] \
         && [[ "$p" != *archlinux* ]] && [[ "$p" != *iso-profiles* ]] \
         && [[ "$p" != *calamares* ]] && [[ "$p" != *iso-initcpio* ]] \
-        && [[ "$p" != *dinit* ]] && [[ "$p" != *artix* ]]; then
+        && [[ "$p" != *dinit* ]] && [[ "$p" != *artix* ]] && [[ "$p" != *blocaled* ]]; then
             if [[ ! -d "${arch_db}/$p" ]]; then
                 msg_row "${tableQ}" "${artix_repo}" "$p" "true"
             fi
