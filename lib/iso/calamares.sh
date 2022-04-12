@@ -29,6 +29,8 @@ write_services_runit_conf(){
 write_services_s6_conf(){
     local conf="$1"/services-s6.conf
     write_services_conf 'svDir' '/etc/s6/sv' 'dbDir' '/etc/s6/rc/compiled' > "$conf"
+    printf '%s\n' "" >> "$conf"
+    printf '%s\n' "defaultBundle: default" >> "$conf"
 }
 
 write_services_suite66_conf(){
